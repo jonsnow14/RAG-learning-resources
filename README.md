@@ -44,6 +44,39 @@ The response is now grounded in real text you provided — text you can trace ba
 
 ### The RAG Pipeline, Step by Step
 
+```
+─────────────────── INDEXING (done once at setup) ───────────────────
+
+   ┌──────────┐     ┌──────────────┐     ┌──────────────┐
+   │          │     │    Embed     │     │    Vector    │
+   │ Sources  ├────►│   Sources   ├────►│    Store    │
+   │    ①    │     │      ②      │     │      ③      │
+   └──────────┘     └──────────────┘     └──────┬───────┘
+                                                 │
+─────────────────── QUERYING (every question) ───┼────────────────────
+                                                 │
+   ┌──────────┐     ┌──────────────┐     ┌──────▼───────┐     ┌──────────────┐     ┌──────────┐
+   │          │     │    Embed     │     │              │     │  Retrieved   │     │          │
+   │  Prompt  ├────►│   Prompt    ├────►│  Retriever  ├────►│    Text     ├────►│   LLM    ├────► Response
+   │    ④    │     │      ⑤      │     │      ⑥      │     │    ⑦  +     │     │    ⑧    │
+   └────┬─────┘     └──────────────┘     └─────────────┘     └──────────────┘     └──────────┘
+        │                                                                                ▲
+        └────────────────────────── original prompt (passed directly) ──────────────────┘
+```
+
+**Steps:**
+
+| # | Step | What happens |
+|---|------|-------------|
+| ① | **Gather Sources** | Collect documents — PDFs, policies, reports — that will serve as the knowledge base |
+| ② | **Embed Sources** | Pass each text chunk through an embedding model, converting it to a fixed-length numeric vector that captures its meaning |
+| ③ | **Store Vectors** | Save the vectors in a vector database optimized for similarity search |
+| ④ | **Obtain User Prompt** | Receive the user's question |
+| ⑤ | **Embed User Prompt** | Embed the question using the same model as step ②, so it lives in the same vector space |
+| ⑥ | **Retrieve Relevant Data** | Find the top-k vectors in the store that are closest to the question vector; return those text chunks |
+| ⑦ | **Create Augmented Prompt** | Combine the retrieved chunks with the original prompt into a single enriched input |
+| ⑧ | **Obtain Response** | Feed the augmented prompt to the LLM; it generates an answer grounded in the retrieved context |
+
 RAG has two phases: **indexing** (done once) and **retrieval + generation** (done on every query).
 
 #### Phase 1 — Indexing
